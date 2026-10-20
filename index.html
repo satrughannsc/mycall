@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Aasan Video Call</title>
+    <!-- PeerJS ki free library ko load karna (FIXED URL) -->
+    <script src="https://unpkg.com"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background: #f0f2f5; }
+        video { width: 300px; height: 225px; background: #333; margin: 10px; border-radius: 8px; }
+        .box { background: white; padding: 20px; border-radius: 8px; display: inline-block; margin-top: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <h1>Bina Server Ke Video Call</h1>
+    
+    <div class="box">
+        <!-- Aapki ID yahan dikhegi -->
+        <p><strong>Aapki Call ID:</strong> <span id="my-id">Loading...</span></p>
+        
+        <!-- Dusre bande ki ID daalne ke liye input box -->
+        <input type="text" id="peer-id" placeholder="Dusre bande ki ID yahan dalein">
+        <button onclick="connectToPeer()">Call Karein</button>
+    </div>
+
+    <br>
+    <!-- Dono ki video screen -->
+    <video id="local-video" autoplay muted></video>
+    <video id="remote-video" autoplay></video>
+
+    <script>
+        let localStream;
+        // PeerJS ko chalu karna (Yeh automatic free cloud server se connect ho jata hai)
+        const peer = new Peer(); 
+
+        // 1. Jab aapki unique ID generate ho jaye
+        peer.on('open', (id) => {
+            document.getElementById('my-id').innerText = id;
+        });
+
+        // 2. Sabse pehle aapka camera aur mic chalu karna
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+            .then((stream) => {
+                localStream = stream;
+                document.getElementById('local-video').srcObject = stream;
+            })
+            .catch((err) => {
+                alert("Camera ya Mic chalu nahi ho paya! Permission check karein.");
+            });
+
+        // 3. Jab saamne wala aapko CALL kare (Call receive karna)
+        peer.on('call', (call) => {
+            // Saamne wale ko apni video bhejna aur uski receive karna
+            call.answer(localStream);
+            call.on('stream', (remoteStream) => {
+                document.getElementById('remote-video').srcObject = remoteStream;
+            });
+        });
+
+        // 4. Jab AAP kisi ko call karein (Button dabane par)
+        function connectToPeer() {
+            const idToCall = document.getElementById('peer-id').value;
+            if (!idToCall) return alert("Pehle dusre bande ki ID dalein!");
+            
+            const call = peer.call(idToCall, localStream);
+            call.on('stream', (remoteStream) => {
+                document.getElementById('remote-video').srcObject = remoteStream;
+            });
+        }
+    </script>
+</body>
+</html>
